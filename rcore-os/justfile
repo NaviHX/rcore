@@ -1,0 +1,40 @@
+qemu-args := "-machine virt \
+    -nographic \
+    -bios ../rustsbi-qemu/target/riscv64imac-unknown-none-elf/release/rustsbi-qemu.bin \
+    -device loader,file=target/riscv64gc-unknown-none-elf/release/rcore-os.bin,addr=0x80200000"
+
+build-user:
+    cd ../user/ && cargo build --release
+    cd ../user/target/riscv64gc-unknown-none-elf/release/ && for obj in `exa | rg "^\d\d" | rg -v "\.d\$" | rg -v "\.bin\$"`; do \
+        rust-objcopy --strip-all $obj -O binary $obj".bin" ; \
+    done
+
+build-sbi:
+    cd ../rustsbi-qemu/ && cargo make
+
+build: build-user build-sbi
+    cargo build --release
+    rust-objcopy --strip-all target/riscv64gc-unknown-none-elf/release/rcore-os -O binary target/riscv64gc-unknown-none-elf/release/rcore-os.bin
+
+debug: build
+    # qemu-system-riscv64 \
+    #     -machine virt \
+    #     -nographic \
+    #     -bios ../sbi/rustsbi-qemu.bin  \
+    #     -device loader,file=target/riscv64gc-unknown-none-elf/release/rcore-os.bin,addr=0x80200000 \
+    #     -s -S
+    qemu-system-riscv64 {{qemu-args}} -s -S
+
+run: build
+    # qemu-system-riscv64 \
+    #     -machine virt \
+    #     -nographic \
+    #     -bios ../sbi/rustsbi-qemu.bin \
+    #     -device loader,file=target/riscv64gc-unknown-none-elf/release/rcore-os.bin,addr=0x80200000
+    qemu-system-riscv64 {{qemu-args}}
+
+gdb:
+    gdb-multiarch \
+        -ex 'file target/riscv64gc-unknown-none-elf/release/rcore-os' \
+        -ex 'set arch riscv:rv64' \
+        -ex 'target remote localhost:1234'
