@@ -1,0 +1,4 @@
+rcore-os/target
+rcore-os/src/link_app.asm
+user/target
+user/Cargo.lock
