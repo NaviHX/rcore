@@ -7,7 +7,7 @@ use riscv::register::{
     utvec::TrapMode,
 };
 
-use crate::{batch::run_next_app, error, syscall::syscall};
+use crate::{error, syscall::syscall, task::exit_and_run_next};
 
 use self::context::TrapContext;
 
@@ -34,11 +34,11 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
         }
         Trap::Exception(Exception::StoreFault | Exception::StorePageFault) => {
             error!("PageFault in appication, killed.");
-            run_next_app();
+            exit_and_run_next();
         }
         Trap::Exception(Exception::IllegalInstruction) => {
             error!("Illegal instruction in application, killed.");
-            run_next_app();
+            exit_and_run_next();
         }
         _ => {
             error!(
