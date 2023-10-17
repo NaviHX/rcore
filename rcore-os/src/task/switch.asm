@@ -14,7 +14,7 @@ __switch:
     sd sp, 8(a0)
 
     # Save ra
-    sd ra, a0
+    sd ra, 0(a0)
 
     # Save sn
     .set n, 0
@@ -25,7 +25,7 @@ __switch:
 
     # Load sp, ra, sn from the next task context
     ld sp, 8(a1)
-    ld ra, a1
+    ld ra, 0(a1)
     .set n, 0
     .rept 12
         LOAD_SN %n
