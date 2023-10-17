@@ -5,7 +5,12 @@
 mod lang_items;
 mod sbi;
 mod console;
-mod batch;
+mod upsync;
+
+// mod batch;
+mod loader;
+mod task;
+
 mod trap;
 mod syscall;
 
