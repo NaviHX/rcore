@@ -24,8 +24,11 @@ pub fn rust_main() -> ! {
     clear_bss();
     log!("Hello, {}!", "World");
     trap::init();
-    batch::print_app_info();
-    batch::run_next_app();
+    // batch::print_app_info();
+    // batch::run_next_app();
+    log!("{} apps loaded.", loader::get_num_apps());
+    task::run_first_task();
+    sbi::shutdown();
 }
 
 fn clear_bss() {
