@@ -29,7 +29,7 @@ pub fn load_apps() -> usize {
     for i in 0..num_app {
         unsafe {
             let base_address = get_app_base_address(i);
-            (base_address..base_address + APP_SIZE_LIMIT).for_each(|p| unsafe {
+            (base_address..base_address + APP_SIZE_LIMIT).for_each(|p| {
                 (p as *mut u8).write_volatile(0);
             });
 
