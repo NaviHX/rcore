@@ -39,6 +39,7 @@ struct InnerTaskManager {
 impl TaskManager {
     pub fn run_first_task(&self) {
         let mut inner = self.inner.exclusive_access();
+        inner.current_app = 0;
         let task0 = &mut inner.tasks[0];
         task0.task_status = TaskStatus::Running;
         let next_task_context_ptr = &task0.task_context as *const _;
@@ -77,16 +78,15 @@ impl TaskManager {
     pub fn run_next_task(&self) {
         if let Some(next_task_id) = self.find_next_task() {
             let mut inner = self.inner.exclusive_access();
+            let cur_id = inner.current_app;
+            inner.current_app = next_task_id;
             let next_task = &mut inner.tasks[next_task_id];
             next_task.task_status = TaskStatus::Running;
             let next_task_context_ptr = &next_task.task_context as *const _;
-
+            let cur = &mut inner.tasks[cur_id].task_context as *mut _;
             drop(inner);
 
-            let mut cur = TaskContext::default();
-            let cur = &mut cur as *mut _;
             unsafe { __switch(cur, next_task_context_ptr) };
-            panic!("Unable to run the first task!");
         } else {
             log!("All tasks completed!");
             shutdown();
