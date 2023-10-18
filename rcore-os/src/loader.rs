@@ -6,7 +6,7 @@ use crate::upsync::UPSyncCell;
 
 pub const MAX_APP_NUM: usize = 10;
 pub const APP_BASEADDR: usize = 0x80400000;
-pub const APP_SIZE_LIMIT: usize = 0x20000;
+pub const APP_SIZE_LIMIT: usize = 0x200000;
 
 global_asm!(include_str!("link_app.asm"));
 
