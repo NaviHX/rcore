@@ -13,6 +13,8 @@ mod task;
 
 mod trap;
 mod syscall;
+mod timer;
+mod config;
 
 
 use core::arch::global_asm;
