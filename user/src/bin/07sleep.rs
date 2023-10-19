@@ -9,7 +9,7 @@ use user_lib::{yield_, time::get_time};
 #[no_mangle]
 fn main() -> isize {
     let start_time = get_time();
-    let sleep_time = 1;
+    let sleep_time = 10;
 
     println!("Start to sleep! I will wake up after {} seconds.", sleep_time);
 
@@ -20,7 +20,8 @@ fn main() -> isize {
             break;
         }
 
-        yield_();
+        // now we have timer
+        // yield_();
     }
 
     println!("Wake up!");
