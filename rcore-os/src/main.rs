@@ -26,6 +26,8 @@ pub fn rust_main() -> ! {
     clear_bss();
     log!("Hello, {}!", "World");
     trap::init();
+    trap::enable_timer_interrupt();
+    timer::set_next_trigger();
     // batch::print_app_info();
     // batch::run_next_app();
     log!("{} apps loaded.", loader::get_num_apps());

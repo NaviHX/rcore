@@ -2,12 +2,17 @@
 use core::arch::global_asm;
 
 use riscv::register::{
-    scause::{self, Exception, Trap},
-    stval, stvec,
+    scause::{self, Exception, Interrupt, Trap},
+    sie, stval, stvec,
     utvec::TrapMode,
 };
 
-use crate::{error, syscall::syscall, task::exit_and_run_next};
+use crate::{
+    error,
+    syscall::syscall,
+    task::{exit_and_run_next, suspend_and_run_next},
+    timer::set_next_trigger,
+};
 
 use self::context::TrapContext;
 
@@ -40,6 +45,10 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
             error!("Illegal instruction in application, killed.");
             exit_and_run_next();
         }
+        Trap::Interrupt(Interrupt::SupervisorTimer) => {
+            set_next_trigger();
+            suspend_and_run_next();
+        }
         _ => {
             error!(
                 "Unsupported trap {:?}, stval = {:#x}!",
@@ -50,4 +59,8 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
     }
 
     cx
+}
+
+pub fn enable_timer_interrupt() {
+    unsafe { sie::set_stimer() };
 }
