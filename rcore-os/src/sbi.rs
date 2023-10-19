@@ -43,3 +43,8 @@ pub fn shutdown() -> ! {
     sbi_call(Sbi::SRSTExtension as usize, ExtensionFid::Shutdown as usize, 0, 0, 0);
     panic!("WTF!!? It should shutdown!");
 }
+
+pub fn set_timer(timer: usize) {
+    // sbi_call(Sbi::SetTimer as usize, 0, timer, 0, 0);
+    sbi_rt::set_timer(timer as u64);
+}

@@ -42,7 +42,9 @@ __alltraps:
 .endm
 
 __restore:
-    mv sp, a0
+    # Because __restore caller (like __switch and goto_restore) will prepare both ra and sp,
+    # __restore doesn't need argument any more.
+    # mv sp, a0
 
     # restore csr
     ld t0, 32*8(sp)

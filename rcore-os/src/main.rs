@@ -5,9 +5,16 @@
 mod lang_items;
 mod sbi;
 mod console;
-mod batch;
+mod upsync;
+
+// mod batch;
+mod loader;
+mod task;
+
 mod trap;
 mod syscall;
+mod timer;
+mod config;
 
 
 use core::arch::global_asm;
@@ -19,8 +26,13 @@ pub fn rust_main() -> ! {
     clear_bss();
     log!("Hello, {}!", "World");
     trap::init();
-    batch::print_app_info();
-    batch::run_next_app();
+    trap::enable_timer_interrupt();
+    timer::set_next_trigger();
+    // batch::print_app_info();
+    // batch::run_next_app();
+    log!("{} apps loaded.", loader::get_num_apps());
+    task::run_first_task();
+    sbi::shutdown();
 }
 
 fn clear_bss() {

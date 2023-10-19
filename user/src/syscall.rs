@@ -19,6 +19,8 @@ pub fn syscall(id: usize, args: [usize; 3]) -> isize {
 pub enum Syscalls {
     Write = 64,
     Exit = 93,
+    Yield = 124,
+    GetTime = 169,
 }
 
 pub fn sys_write(fd: usize, buf: &[u8]) -> isize {
@@ -30,4 +32,14 @@ pub fn sys_write(fd: usize, buf: &[u8]) -> isize {
 
 pub fn sys_exit(xstate: i32) -> isize {
     syscall(Syscalls::Exit as usize, [xstate as usize, 0, 0])
+}
+
+pub fn sys_yield() -> isize {
+    syscall(Syscalls::Yield as usize, [0, 0, 0])
+}
+
+use crate::time::TimeVal;
+
+pub fn sys_get_time(ts: &mut TimeVal, tz: usize) -> isize {
+    syscall(Syscalls::GetTime as usize, [ts as *mut _ as usize, tz, 0])
 }

@@ -2,12 +2,17 @@
 use core::arch::global_asm;
 
 use riscv::register::{
-    scause::{self, Exception, Trap},
-    stval, stvec,
+    scause::{self, Exception, Interrupt, Trap},
+    sie, stval, stvec,
     utvec::TrapMode,
 };
 
-use crate::{batch::run_next_app, error, syscall::syscall};
+use crate::{
+    error,
+    syscall::syscall,
+    task::{exit_and_run_next, suspend_and_run_next},
+    timer::set_next_trigger,
+};
 
 use self::context::TrapContext;
 
@@ -34,11 +39,15 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
         }
         Trap::Exception(Exception::StoreFault | Exception::StorePageFault) => {
             error!("PageFault in appication, killed.");
-            run_next_app();
+            exit_and_run_next();
         }
         Trap::Exception(Exception::IllegalInstruction) => {
             error!("Illegal instruction in application, killed.");
-            run_next_app();
+            exit_and_run_next();
+        }
+        Trap::Interrupt(Interrupt::SupervisorTimer) => {
+            set_next_trigger();
+            suspend_and_run_next();
         }
         _ => {
             error!(
@@ -50,4 +59,8 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
     }
 
     cx
+}
+
+pub fn enable_timer_interrupt() {
+    unsafe { sie::set_stimer() };
 }

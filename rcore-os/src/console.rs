@@ -33,6 +33,7 @@ macro_rules! println {
 #[macro_export]
 macro_rules! error {
     ($fmt:literal $(,$($arg:tt)+)?) => {
+        #[cfg(feature = "error")]
         $crate::console::print(format_args!(concat!("\x1b[31m[kernel - error] ", $fmt, "\x1b[0m\n") $(,$($arg)+)?))
     }
 }
@@ -40,6 +41,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! log {
     ($fmt:literal $(,$($arg:tt)+)?) => {
+        #[cfg(feature = "log")]
         $crate::console::print(format_args!(concat!("\x1b[34m[kernel] ", $fmt, "\x1b[0m\n") $(,$($arg)+)?))
     }
 }
@@ -47,6 +49,15 @@ macro_rules! log {
 #[macro_export]
 macro_rules! warn {
     ($fmt:literal $(,$($arg:tt)+)?) => {
+        #[cfg(feature = "warn")]
         $crate::console::print(format_args!(concat!("\x1b[93m[kernel - warn] ", $fmt, "\x1b[0m\n") $(,$($arg)+)?))
+    }
+}
+
+#[macro_export]
+macro_rules! debug {
+    ($fmt:literal $(,$($arg:tt)+)?) => {
+        #[cfg(feature = "debug")]
+        $crate::console::print(format_args!(concat!("\x1b[32m[kernel - debug] ", $fmt, "\x1b[0m\n") $(,$($arg)+)?))
     }
 }
