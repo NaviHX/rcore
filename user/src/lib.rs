@@ -3,6 +3,7 @@
 #![feature(panic_info_message)]
 
 mod syscall;
+pub mod time;
 pub mod console;
 mod lang_items;
 
