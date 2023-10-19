@@ -19,7 +19,11 @@ build: build-user build-sbi
     cargo build --release
     rust-objcopy --strip-all target/riscv64gc-unknown-none-elf/release/rcore-os -O binary target/riscv64gc-unknown-none-elf/release/rcore-os.bin
 
-debug: build
+debug-build: build-user build-sbi
+    cargo build --release --features "log debug"
+    rust-objcopy --strip-all target/riscv64gc-unknown-none-elf/release/rcore-os -O binary target/riscv64gc-unknown-none-elf/release/rcore-os.bin
+
+debug: debug-build
     qemu-system-riscv64 {{qemu-args}} -s -S
 
 run: build
