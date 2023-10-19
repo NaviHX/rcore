@@ -4,9 +4,7 @@ use lazy_static::lazy_static;
 use crate::trap::context::TrapContext;
 use crate::upsync::UPSyncCell;
 
-pub const MAX_APP_NUM: usize = 10;
-pub const APP_BASEADDR: usize = 0x80400000;
-pub const APP_SIZE_LIMIT: usize = 0x200000;
+pub use crate::config::{MAX_APP_NUM, APP_SIZE_LIMIT, APP_BASEADDR};
 
 global_asm!(include_str!("link_app.asm"));
 
@@ -49,8 +47,7 @@ fn get_app_base_address(id: usize) -> usize {
     APP_BASEADDR + id * APP_SIZE_LIMIT
 }
 
-const USER_STACK_SIZE: usize = 0x2000;
-const KERNEL_STACK_SIZE: usize = 0x2000;
+pub use crate::config::{KERNEL_STACK_SIZE, USER_STACK_SIZE};
 
 #[derive(Copy, Clone)]
 struct KernelStack {
