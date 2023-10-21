@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
+#![feature(alloc_error_handler)]
 
 mod lang_items;
 mod sbi;
@@ -15,6 +16,9 @@ mod trap;
 mod syscall;
 mod timer;
 mod config;
+mod mem;
+
+extern crate alloc;
 
 
 use core::arch::global_asm;
