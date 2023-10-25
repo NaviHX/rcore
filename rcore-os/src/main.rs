@@ -18,6 +18,7 @@ mod timer;
 mod config;
 mod mem;
 
+#[macro_use]
 extern crate alloc;
 
 
