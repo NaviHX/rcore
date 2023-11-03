@@ -11,3 +11,8 @@ pub const CLOCK_FREQ: usize = 12500000;
 pub const KERNEL_HEAP_SIZE: usize = 0x4000;
 
 pub const MEMORY_END: usize = 0x80800000;
+
+pub const PAGE_SIZE: usize = 1 << 12;
+pub const TRAP_CONTEXT: usize = usize::MAX - PAGE_SIZE * 2 + 1;
+pub const TRAMPOLINE: usize = TRAP_CONTEXT + PAGE_SIZE;
+
