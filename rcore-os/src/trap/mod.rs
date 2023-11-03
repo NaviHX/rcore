@@ -1,5 +1,5 @@
 #![allow(unused)]
-use core::arch::global_asm;
+use core::arch::{asm, global_asm};
 
 use riscv::register::{
     scause::{self, Exception, Interrupt, Trap},
@@ -8,9 +8,10 @@ use riscv::register::{
 };
 
 use crate::{
+    config::{TRAMPOLINE, TRAP_CONTEXT},
     error,
     syscall::syscall,
-    task::{exit_and_run_next, suspend_and_run_next},
+    task::{exit_and_run_next, get_current_token, get_current_trap_context, suspend_and_run_next},
     timer::set_next_trigger,
 };
 
@@ -28,7 +29,11 @@ pub fn init() {
 }
 
 #[no_mangle]
-pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
+pub fn trap_handler() -> ! {
+    // Ignore traps from kernel
+    set_kernel_trap_entry();
+
+    let cx = get_current_trap_context();
     let scause = scause::read();
     let stval = stval::read();
 
@@ -58,9 +63,51 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
         }
     }
 
-    cx
+    trap_return();
 }
 
 pub fn enable_timer_interrupt() {
     unsafe { sie::set_stimer() };
+}
+
+fn set_kernel_trap_entry() {
+    unsafe {
+        stvec::write(trap_from_kernel as usize, TrapMode::Direct);
+    }
+}
+
+fn set_user_trap_entry() {
+    unsafe {
+        stvec::write(TRAMPOLINE, TrapMode::Direct);
+    }
+}
+
+pub fn trap_from_kernel() -> ! {
+    panic!("A trap from kernel!");
+}
+
+pub fn trap_return() -> ! {
+    set_user_trap_entry();
+    let trap_context_ptr = TRAP_CONTEXT;
+    let user_satp = get_current_token();
+
+    extern "C" {
+        fn __alltraps();
+        fn __restore();
+    }
+
+    let restore_addr = __restore as usize - __alltraps as usize + TRAMPOLINE;
+
+    unsafe {
+        asm!(
+            "fence.i",
+            "jr {restore_addr}",
+            restore_addr = in(reg) restore_addr,
+            in("a0") trap_context_ptr,
+            in("a1") user_satp,
+            options(noreturn)
+        );
+    }
+
+    panic!("Cannot return to user code!");
 }

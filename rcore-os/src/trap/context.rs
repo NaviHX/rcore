@@ -2,14 +2,18 @@
 
 use core::arch::asm;
 
-use riscv::register::sstatus::{Sstatus, self, SPP};
 use bitfield::BitMut;
+use riscv::register::sstatus::{self, Sstatus, SPP};
 
 #[repr(C)]
 pub struct TrapContext {
     pub x: [usize; 32],
     pub sstatus: Sstatus,
     pub sepc: usize,
+
+    pub kernel_satp: usize,
+    pub kernel_sp: usize,
+    pub trap_handler: usize,
 }
 
 impl TrapContext {
@@ -17,7 +21,13 @@ impl TrapContext {
         self.x[2] = sp;
     }
 
-    pub fn app_init_context(entry: usize, sp: usize) -> Self {
+    pub fn app_init_context(
+        entry: usize,
+        sp: usize,
+        kernel_satp: usize,
+        kernel_sp: usize,
+        trap_handler: usize,
+    ) -> Self {
         // set sstatus to U
         let mut bits: u64 = unsafe { core::mem::transmute(sstatus::read()) };
         bits.set_bit(8, false);
@@ -26,6 +36,9 @@ impl TrapContext {
             x: [0; 32],
             sstatus,
             sepc: entry,
+            kernel_satp,
+            kernel_sp,
+            trap_handler,
         };
         ctx.set_sp(sp);
         ctx
