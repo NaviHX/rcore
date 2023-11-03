@@ -5,6 +5,8 @@ ENTRY(_start)
 /* BASE_ADDRESS = 0x80400000; */
 /* Get base address from env */
 /* Build user application with `BASE_ADDRESS` set */
+/* For batch and physics address mode apps, this should be difference for each app. */
+/* For apps with paging and elf parsing enabled, you can set the same address e.g 0x10000 */
 BASE_ADDRESS = ${BASE_ADDRESS};
 
 SECTIONS {
@@ -35,7 +37,6 @@ SECTIONS {
     }
     . = ALIGN(4K);
     bss_end = .;
-    kernel_end = .;
 
     /DISCARD/ : {
         *(.eh_frame)
