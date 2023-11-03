@@ -18,16 +18,19 @@ extern "C" {
     fn trampoline_start();
 }
 
-const TEXT_START: usize = text_start as usize;
-const TEXT_END: usize = text_end as usize;
-const RODATA_START: usize = rodata_start as usize;
-const RODATA_END: usize = rodata_end as usize;
-const DATA_START: usize = data_start as usize;
-const DATA_END: usize = data_end as usize;
-const BSS_WITH_STACK_START: usize = bss_with_stack_start as usize;
-const BSS_END: usize = bss_end as usize;
-const KERNEL_END: usize = kernel_end as usize;
-const TRAMPOLINE_START: usize = trampoline_start as usize;
+lazy_static! {
+    static ref TEXT_START: usize = text_start as usize;
+    static ref TEXT_END: usize = text_end as usize;
+    static ref RODATA_START: usize = rodata_start as usize;
+    static ref RODATA_END: usize = rodata_end as usize;
+    static ref DATA_START: usize = data_start as usize;
+    static ref DATA_END: usize = data_end as usize;
+    static ref BSS_WITH_STACK_START: usize = bss_with_stack_start as usize;
+    static ref BSS_END: usize = bss_end as usize;
+    static ref KERNEL_END: usize = kernel_end as usize;
+    static ref TRAMPOLINE_START: usize = trampoline_start as usize;
+}
+
 
 use crate::{
     config::{MEMORY_END, PAGE_SIZE, TRAMPOLINE, TRAP_CONTEXT},
@@ -189,8 +192,8 @@ impl MemorySet {
 
         memory_set.push(
             MapArea::new(
-                TEXT_START.into(),
-                TEXT_END.into(),
+                (*TEXT_START).into(),
+                (*TEXT_END).into(),
                 MapType::Identical,
                 MapPermission::R | MapPermission::X,
             ),
@@ -198,8 +201,8 @@ impl MemorySet {
         );
         memory_set.push(
             MapArea::new(
-                RODATA_START.into(),
-                RODATA_END.into(),
+                (*RODATA_START).into(),
+                (*RODATA_END).into(),
                 MapType::Identical,
                 MapPermission::R,
             ),
@@ -207,8 +210,8 @@ impl MemorySet {
         );
         memory_set.push(
             MapArea::new(
-                DATA_START.into(),
-                DATA_END.into(),
+                (*DATA_START).into(),
+                (*DATA_END).into(),
                 MapType::Identical,
                 MapPermission::R | MapPermission::W,
             ),
@@ -216,8 +219,8 @@ impl MemorySet {
         );
         memory_set.push(
             MapArea::new(
-                BSS_WITH_STACK_START.into(),
-                BSS_END.into(),
+                (*BSS_WITH_STACK_START).into(),
+                (*BSS_END).into(),
                 MapType::Identical,
                 MapPermission::R | MapPermission::W,
             ),
@@ -226,7 +229,7 @@ impl MemorySet {
         // mapping remaining physical memory
         memory_set.push(
             MapArea::new(
-                KERNEL_END.into(),
+                (*KERNEL_END).into(),
                 MEMORY_END.into(),
                 MapType::Identical,
                 MapPermission::R | MapPermission::W,
@@ -313,10 +316,10 @@ impl MemorySet {
         )
     }
 
-    pub fn map_trampoline(&self) {
+    pub fn map_trampoline(&mut self) {
         self.page_table.map(
             VirtAddr::from(TRAMPOLINE).into(),
-            PhysAddr::from(TRAMPOLINE_START as usize).into(),
+            PhysAddr::from(*TRAMPOLINE_START as usize).into(),
             PTEFlags::R | PTEFlags::X,
         )
     }
