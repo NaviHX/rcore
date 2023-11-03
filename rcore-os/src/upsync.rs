@@ -1,4 +1,4 @@
-use core::cell::{RefCell, RefMut};
+use core::cell::{RefCell, RefMut, Ref};
 /// This cell is safe only when being used in single-processor environment
 pub struct UPSyncCell<T> {
     inner: RefCell<T>,
@@ -14,6 +14,10 @@ impl<T> UPSyncCell<T> {
 
     pub fn exclusive_access(&self) -> RefMut<'_, T> {
         self.inner.borrow_mut()
+    }
+
+    pub fn borrow(&self) -> Ref<'static, T> {
+        self.inner.borrow()
     }
 }
 
