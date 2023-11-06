@@ -91,7 +91,7 @@ impl PageTable {
 
     fn find_pte(&self, vpn: VirtPageNum) -> Option<&mut PageTableEntry> {
         let idxs = vpn.indexes();
-        let ppn = self.root_ppn;
+        let mut ppn = self.root_ppn;
         let mut result = None;
 
         #[allow(clippy::needless_range_loop)]
@@ -105,6 +105,7 @@ impl PageTable {
             if !pte.is_valid() {
                 return None;
             }
+            ppn = pte.ppn();
         }
 
         result
