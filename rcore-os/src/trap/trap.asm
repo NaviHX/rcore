@@ -57,7 +57,7 @@ __restore:
     # a0: *TrapContext in user space a1: user space token
     csrw satp, a1
     sfence.vma
-    csrw ssratch, a0
+    csrw sscratch, a0
     mv sp, a0
 
     # restore csr
