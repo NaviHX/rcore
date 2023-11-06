@@ -1,4 +1,4 @@
-use crate::mem::address::*;
+use crate::{mem::address::*, debug};
 use alloc::vec::Vec;
 use bitflags::bitflags;
 
@@ -67,7 +67,7 @@ impl PageTable {
 impl PageTable {
     fn find_pte_create(&mut self, vpn: VirtPageNum) -> Option<&mut PageTableEntry> {
         let idxs = vpn.indexes();
-        let ppn = self.root_ppn;
+        let mut ppn = self.root_ppn;
         let mut result = None;
 
         #[allow(clippy::needless_range_loop)]
@@ -83,6 +83,7 @@ impl PageTable {
                 *pte = PageTableEntry::new(frame.ppn, PTEFlags::V);
                 self.frames.push(frame);
             }
+            ppn = pte.ppn();
         }
 
         result
@@ -112,6 +113,7 @@ impl PageTable {
 
 impl PageTable {
     pub fn map(&mut self, vpn: VirtPageNum, ppn: PhysPageNum, flags: PTEFlags) {
+        debug!("Memory set 0x{:x?} trying map 0x{:x?} -> 0x{:x?}", self.root_ppn.0, vpn.0, ppn.0);
         let pte = self.find_pte_create(vpn).unwrap();
         assert!(!pte.is_valid(), "vpn {:?} is mapped before mapping!", vpn);
         *pte = PageTableEntry::new(ppn, flags | PTEFlags::V);
