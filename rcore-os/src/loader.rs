@@ -1,50 +1,29 @@
 use core::arch::{asm, global_asm};
-use lazy_static::lazy_static;
 
 use crate::trap::context::TrapContext;
-use crate::upsync::UPSyncCell;
 
 pub use crate::config::{MAX_APP_NUM, APP_SIZE_LIMIT, APP_BASEADDR};
 
 global_asm!(include_str!("link_app.asm"));
 
-/// Load all apps into instruction memory
-pub fn load_apps() -> usize {
-    // Find the addresses of each app.
-    extern "C" {
-        fn _num_app();
-    }
-    let num_app_ptr = _num_app as usize as *const usize;
-    let num_app = unsafe { num_app_ptr.read_volatile() };
-    let app_start_ptr = unsafe { num_app_ptr.add(1) };
-    let app_start = unsafe { core::slice::from_raw_parts(app_start_ptr, num_app + 1) };
-
-    // clear i-cache first
-    unsafe {
-        asm!("fence.i");
-    }
-    // Load every app into memory
-    for i in 0..num_app {
-        unsafe {
-            let base_address = get_app_base_address(i);
-            (base_address..base_address + APP_SIZE_LIMIT).for_each(|p| {
-                (p as *mut u8).write_volatile(0);
-            });
-
-            let src = core::slice::from_raw_parts(
-                app_start[i] as *mut u8,
-                app_start[i + 1] - app_start[i],
-            );
-            let dst = core::slice::from_raw_parts_mut(base_address as *mut u8, src.len());
-            dst.copy_from_slice(src);
-        }
-    }
-
-    num_app
+pub fn get_num_app() -> usize {
+    extern "C" { fn _num_app(); }
+    unsafe { (_num_app as usize as *const usize).read_volatile() }
 }
 
-fn get_app_base_address(id: usize) -> usize {
-    APP_BASEADDR + id * APP_SIZE_LIMIT
+pub fn get_app_data(app_id: usize) -> &'static [u8] {
+    extern "C" { fn _num_app(); }
+    let num_app_ptr = _num_app as usize as *const usize;
+    let num_app = get_num_app();
+    let app_start = unsafe {
+        core::slice::from_raw_parts(num_app_ptr.add(1), num_app + 1)
+    };
+    assert!(app_id < num_app);
+    let start = app_start[app_id];
+    let size = app_start[app_id + 1] - start;
+    unsafe {
+        core::slice::from_raw_parts(start as *const u8, size)
+    }
 }
 
 pub use crate::config::{KERNEL_STACK_SIZE, USER_STACK_SIZE};
@@ -86,34 +65,4 @@ impl KernelStack {
         unsafe { *new_sp = ctx };
         unsafe { new_sp.as_mut().unwrap() }
     }
-}
-
-struct AppManager {
-    num_apps: usize,
-}
-
-impl AppManager {
-    pub fn get_num_apps(&self) -> usize {
-        self.num_apps
-    }
-}
-
-lazy_static! {
-    static ref APP_MANAGER: UPSyncCell<AppManager> = unsafe {
-        let num_apps = load_apps();
-
-        UPSyncCell::new(AppManager { num_apps })
-    };
-}
-
-pub fn get_num_apps() -> usize {
-    let app_manager = APP_MANAGER.exclusive_access();
-    app_manager.get_num_apps()
-}
-
-pub fn init_app_context(id: usize) -> usize {
-    KERNEL_STACK[id].push_context(TrapContext::app_init_context(
-        get_app_base_address(id),
-        USER_STACK[id].get_sp(),
-    )) as *const _ as usize
 }
