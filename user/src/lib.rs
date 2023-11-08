@@ -5,6 +5,7 @@
 mod syscall;
 pub mod time;
 pub mod console;
+pub mod process;
 mod lang_items;
 
 #[no_mangle]
@@ -36,4 +37,5 @@ use syscall::*;
 
 pub fn write(fd: usize, buf: &[u8]) -> isize { sys_write(fd, buf)}
 pub fn exit(xstate: i32) -> isize { sys_exit(xstate) }
-pub fn yield_() -> isize { sys_yield() }
+
+use process::*;

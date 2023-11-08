@@ -21,6 +21,9 @@ pub enum Syscalls {
     Exit = 93,
     Yield = 124,
     GetTime = 169,
+    Fork = 220,
+    Exec = 221,
+    WaitPID = 260,
 }
 
 pub fn sys_write(fd: usize, buf: &[u8]) -> isize {
@@ -42,4 +45,16 @@ use crate::time::TimeVal;
 
 pub fn sys_get_time(ts: &mut TimeVal, tz: usize) -> isize {
     syscall(Syscalls::GetTime as usize, [ts as *mut _ as usize, tz, 0])
+}
+
+pub fn sys_fork() -> isize {
+    syscall(Syscalls::Fork as usize, [0, 0, 0])
+}
+
+pub fn sys_waitpid(pid: isize, exit_code: *mut i32) -> isize {
+    syscall(Syscalls::WaitPID as usize, [pid as usize, exit_code as usize, 0])
+}
+
+pub fn sys_exec(path: &str) -> isize {
+    syscall(Syscalls::Exec as usize, [path.as_ptr() as usize, 0, 0])
 }
