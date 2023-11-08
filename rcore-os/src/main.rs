@@ -7,6 +7,7 @@ mod lang_items;
 mod sbi;
 mod console;
 mod upsync;
+mod utils;
 
 // mod batch;
 mod loader;
