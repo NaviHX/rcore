@@ -1,4 +1,4 @@
-use crate::timer::{get_time_us, MICRO_PER_SEC};
+use crate::{timer::{get_time_us, MICRO_PER_SEC}, utils::{any_as_u8_slice, copy_to_dsts}, mem::page_table::translate, task::get_current_token};
 
 #[repr(C)]
 pub struct TimeVal {
@@ -9,12 +9,15 @@ pub struct TimeVal {
 pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
     let usec = get_time_us();
     let sec = usec / MICRO_PER_SEC;
+    let src = TimeVal { sec, usec };
 
     unsafe {
-        let ts = &mut *ts;
-        ts.sec = sec;
-        ts.usec = usec;
-    }
+        let src = any_as_u8_slice(&src);
+        let mut dsts = translate(get_current_token(), ts);
 
-    0
+        match copy_to_dsts(src, &mut dsts[..]) {
+            Ok(_) => 0,
+            Err(_) => 1,
+        }
+    }
 }
