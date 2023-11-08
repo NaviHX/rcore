@@ -31,12 +31,15 @@ global_asm!(include_str!("entry.asm"));
 pub fn rust_main() -> ! {
     clear_bss();
     log!("Hello, {}!", "World");
+    mem::init();
+    log!("Memory Inited");
     trap::init();
     trap::enable_timer_interrupt();
+    log!("Trap Inited");
     timer::set_next_trigger();
     // batch::print_app_info();
     // batch::run_next_app();
-    log!("{} apps loaded.", loader::get_num_apps());
+    log!("{} apps loaded.", loader::get_num_app());
     task::run_first_task();
     sbi::shutdown();
 }
