@@ -56,6 +56,7 @@ impl StackFrameAllocator {
 }
 
 use crate::config::MEMORY_END;
+use crate::debug;
 use crate::upsync::UPSyncCell;
 use lazy_static::lazy_static;
 type FrameAllocatorImpl = StackFrameAllocator;
