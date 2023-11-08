@@ -29,6 +29,13 @@ SECTIONS {
     . = ALIGN(4K);
     rodata_end = .;
 
+    data_start = .;
+    .data : {
+        *(.data .data.*)
+        *(.sdata .sdata.*)
+    }
+    data_end = .;
+
     .bss : {
         *(.bss.stack)
         bss_start = .;

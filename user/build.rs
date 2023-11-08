@@ -10,7 +10,7 @@ fn main() {
 }
 
 fn generate_link_script() {
-    let env_context: HashMap<String, String> = env::vars().collect();
+    let env_context: HashMap<String, String> = env::vars().filter(|(k, _)| k == "BASE_ADDRESS").collect();
     let link_script_pattern = fs::read_to_string("src/linker.ld").unwrap();
 
     let linker_script = envsubst::substitute(link_script_pattern, &env_context).unwrap();
