@@ -54,6 +54,15 @@ _num_app:
     }
     writeln!(output, ".quad app_{}_end", apps.len() - 1).unwrap();
 
+    writeln!(output, r#"
+    .global app_names
+app_names:
+        "#).unwrap();
+
+    for app in apps.iter() {
+        writeln!(output, r#"    .string "{}""#, app).unwrap();
+    }
+
     for (i, app) in apps.iter().enumerate() {
         writeln!(
             output,
