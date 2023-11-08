@@ -4,7 +4,7 @@ use core::arch::{asm, global_asm};
 use riscv::register::{
     scause::{self, Exception, Interrupt, Trap},
     sie, stval, stvec,
-    utvec::TrapMode,
+    utvec::TrapMode, sepc, sstatus,
 };
 
 use crate::{
@@ -12,7 +12,7 @@ use crate::{
     error,
     syscall::syscall,
     task::{exit_and_run_next, get_current_token, get_current_trap_context, suspend_and_run_next},
-    timer::set_next_trigger,
+    timer::set_next_trigger, debug,
 };
 
 use self::context::TrapContext;
@@ -30,6 +30,15 @@ pub fn init() {
 
 #[no_mangle]
 pub fn trap_handler() -> ! {
+    let sepc = sepc::read();
+    let sstatus = sstatus::read();
+    let scause = scause::read().cause();
+    let stval = stval::read();
+    debug!("Sepc: 0x{:x}", sepc);
+    debug!("Sstatus: {:?}", sstatus);
+    debug!("Scause: {:?}", scause);
+    debug!("Stval: 0x{:x}", stval);
+
     // Ignore traps from kernel
     set_kernel_trap_entry();
 

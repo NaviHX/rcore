@@ -12,7 +12,7 @@ use crate::{
     },
     sbi::shutdown,
     trap::{context::TrapContext, trap_handler},
-    upsync::UPSyncCell,
+    upsync::UPSyncCell, debug,
 };
 use alloc::vec::Vec;
 use context::TaskContext;
@@ -57,7 +57,7 @@ impl TaskManager {
 
         drop(inner);
 
-        let mut cur = TaskContext::default();
+        let mut cur = TaskContext::zero_init();
         let cur = &mut cur as *mut _;
         unsafe { __switch(cur, next_task_context_ptr) };
         panic!("Unable to run the first task!");
@@ -97,6 +97,7 @@ impl TaskManager {
             let cur = &mut inner.tasks[cur_id].task_context as *mut _;
             drop(inner);
 
+            debug!("Select task {}", next_task_id);
             unsafe { __switch(cur, next_task_context_ptr) };
         } else {
             log!("All tasks completed!");
@@ -127,15 +128,18 @@ lazy_static! {
 }
 
 pub fn run_first_task() {
+    debug!("Running first task");
     TASK_MANAGER.run_first_task();
 }
 
 pub fn suspend_and_run_next() {
+    debug!("Suspend and run next task");
     TASK_MANAGER.mark_current_suspended();
     TASK_MANAGER.run_next_task();
 }
 
 pub fn exit_and_run_next() -> ! {
+    debug!("Exit and run next task");
     TASK_MANAGER.mark_current_exited();
     TASK_MANAGER.run_next_task();
     panic!("Run exited task again");
