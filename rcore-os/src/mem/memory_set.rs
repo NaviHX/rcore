@@ -103,12 +103,14 @@ impl MapArea {
         let mut current_vpn = self.vpn_range.get_start();
         let len = data.len();
         loop {
+            debug!("Copy data for virtual page 0x{:x}", current_vpn.0);
             let src = &data[start..len.min(start + PAGE_SIZE)];
             let dst = &mut page_table
                 .translate(current_vpn)
                 .unwrap()
                 .ppn()
                 .get_byte_array()[..src.len()];
+            debug!("Copy from 0x{:x} to 0x{:x}", src.as_ptr() as usize, dst.as_ptr() as usize);
             dst.copy_from_slice(src);
             start += PAGE_SIZE;
             if start >= len {
@@ -177,6 +179,8 @@ impl MemorySet {
 
     // Without kernel stacks
     pub fn new_kernel() -> Self {
+        debug!("Creating kernel memory set!");
+
         let mut memory_set = Self::new_bare();
         memory_set.map_trampoline();
         debug!(".text {:#x}..{:#x}", text_start as usize, text_end as usize);
@@ -237,11 +241,13 @@ impl MemorySet {
             None,
         );
 
+        debug!("Created a new kernel memory set");
         memory_set
     }
 
     /// return (MemorySet, user_sp, entry_point)
     pub fn from_elf(elf_data: &[u8]) -> (Self, usize, usize) {
+        debug!("Creating app memory set!");
         let mut memory_set = Self::new_bare();
         memory_set.map_trampoline();
 
@@ -272,6 +278,7 @@ impl MemorySet {
 
                 let map_area = MapArea::new(start_va, end_va, MapType::Framed, map_perm);
                 max_end_vpn = map_area.vpn_range.get_end();
+                debug!("Loading ELF: Mapping 0x{:x}..0x{:x}", start_va.0, end_va.0);
                 memory_set.push(
                     map_area,
                     Some(&elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize]),
@@ -309,6 +316,7 @@ impl MemorySet {
             None,
         );
 
+        debug!("Created a new app memory set");
         (
             memory_set,
             user_stack_top,
@@ -319,7 +327,7 @@ impl MemorySet {
     pub fn map_trampoline(&mut self) {
         self.page_table.map(
             VirtAddr::from(TRAMPOLINE).into(),
-            PhysAddr::from(*TRAMPOLINE_START as usize).into(),
+            PhysAddr::from(*TRAMPOLINE_START).into(),
             PTEFlags::R | PTEFlags::X,
         )
     }
