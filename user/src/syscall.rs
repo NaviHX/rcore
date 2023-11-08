@@ -17,6 +17,7 @@ pub fn syscall(id: usize, args: [usize; 3]) -> isize {
 
 #[repr(usize)]
 pub enum Syscalls {
+    Read = 63,
     Write = 64,
     Exit = 93,
     Yield = 124,
@@ -24,6 +25,10 @@ pub enum Syscalls {
     Fork = 220,
     Exec = 221,
     WaitPID = 260,
+}
+
+pub fn sys_read(fd: usize, buf: &mut [u8]) -> isize {
+    syscall(Syscalls::Read as usize, [fd, buf.as_mut_ptr() as usize, buf.len()])
 }
 
 pub fn sys_write(fd: usize, buf: &[u8]) -> isize {

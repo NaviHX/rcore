@@ -35,7 +35,8 @@ fn main() -> i32 {
 
 use syscall::*;
 
-pub fn write(fd: usize, buf: &[u8]) -> isize { sys_write(fd, buf)}
+pub fn write(fd: usize, buf: &[u8]) -> isize { sys_write(fd, buf) }
+pub fn read(fd: usize, buf: &mut[u8]) -> isize { sys_read(fd, buf) }
 pub fn exit(xstate: i32) -> isize { sys_exit(xstate) }
 
-use process::*;
+pub use process::*;
