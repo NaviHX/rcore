@@ -16,7 +16,7 @@ impl<T> UPSyncCell<T> {
         self.inner.borrow_mut()
     }
 
-    pub fn borrow(&self) -> Ref<'static, T> {
+    pub fn borrow(&self) -> Ref<T> {
         self.inner.borrow()
     }
 }
