@@ -8,7 +8,7 @@ user-bin-dir := "../user/target/riscv64gc-unknown-none-elf/release/"
 
 build-user:
     cd ../user/ && python build.py
-    cd ../user/target/riscv64gc-unknown-none-elf/release/ && for obj in `exa | rg "^\d\d" | rg -v "\.d\$" | rg -v "\.bin\$"`; do \
+    cd ../user/target/riscv64gc-unknown-none-elf/release/ && for obj in `exa -f | rg -v "\.d\$" | rg -v "\.bin\$"`; do \
         cp $obj $obj".bin" ; \
     done
 
