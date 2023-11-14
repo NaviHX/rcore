@@ -125,6 +125,35 @@ macro_rules! pagenum_impl {
 pagenum_impl!(PhysPageNum);
 pagenum_impl!(VirtPageNum);
 
+macro_rules! address_impl {
+    ($addr:ty) => {
+        impl $addr {
+            // pub fn get_byte_array(&self) -> &'static mut [u8] {
+            //     let addr: usize = usize::from(self.clone());
+            //     unsafe { core::slice::from_raw_parts_mut(addr as *mut u8, 4096) }
+            // }
+
+            pub fn get_mut<T>(&self) -> &'static mut T {
+                let addr: usize = usize::from(self.clone());
+                unsafe { (addr as *mut T).as_mut().unwrap() }
+            }
+
+            // pub fn get_pte_table(&self) -> &'static mut [$crate::mem::page_table::PageTableEntry] {
+            //     let addr: usize = usize::from(self.clone());
+            //     unsafe {
+            //         core::slice::from_raw_parts_mut(
+            //             addr as *mut $crate::mem::page_table::PageTableEntry,
+            //             512,
+            //         )
+            //     }
+            // }
+        }
+    };
+}
+
+address_impl!(PhysAddr);
+address_impl!(VirtAddr);
+
 impl VirtPageNum {
     pub fn indexes(&self) -> [usize; 3] {
         let mut vpn = self.0;

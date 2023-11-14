@@ -60,6 +60,7 @@ pub enum MapType {
 }
 
 bitflags! {
+    #[derive(Clone, Copy)]
     pub struct MapPermission: u8 {
         const R = 1 << 1;
         const W = 1 << 2;
@@ -82,6 +83,18 @@ impl MapArea {
             data_frames: BTreeMap::new(),
             map_type,
             map_perm,
+        }
+    }
+
+    pub fn from_another(another: &MapArea) -> Self {
+        Self {
+            vpn_range: VPNRange::new(
+                another.vpn_range.get_start(),
+                another.vpn_range.get_end(),
+            ),
+            data_frames: BTreeMap::new(),
+            map_type: another.map_type,
+            map_perm: another.map_perm,
         }
     }
 
@@ -251,11 +264,16 @@ impl MemorySet {
         let mut memory_set = Self::new_bare();
         memory_set.map_trampoline();
 
+        debug!("Creating elf context");
         let elf = xmas_elf::ElfFile::new(elf_data).unwrap();
+        debug!("Get Header");
         let elf_header = elf.header;
+        debug!("Get magic");
         let magic = elf_header.pt1.magic;
+        debug!("Chekc magic");
         assert_eq!(magic, [0x7f, 0x45, 0x4c, 0x46], "Invalid ELF header!");
 
+        debug!("Loading elf sections");
         let ph_count = elf_header.pt2.ph_count();
         let mut max_end_vpn = VirtPageNum(0);
         for i in 0..ph_count {
@@ -324,6 +342,24 @@ impl MemorySet {
         )
     }
 
+    pub fn from_existed_user_space(user_space: &MemorySet) -> Self {
+        let mut memory_set = Self::new_bare();
+        memory_set.map_trampoline();
+
+        for area in user_space.areas.iter() {
+            let new_area = MapArea::from_another(area);
+            memory_set.push(new_area, None);
+
+            for vpn in area.vpn_range {
+                let src_ppn = user_space.translate(vpn).unwrap().ppn();
+                let dst_ppn = memory_set.translate(vpn).unwrap().ppn();
+                dst_ppn.get_byte_array().copy_from_slice(src_ppn.get_byte_array());
+            }
+        }
+
+        memory_set
+    }
+
     pub fn map_trampoline(&mut self) {
         self.page_table.map(
             VirtAddr::from(TRAMPOLINE).into(),
@@ -350,9 +386,18 @@ impl MemorySet {
 
     pub fn remove_area_with_start_vpn(&mut self, start_vpn: VirtPageNum) {
         if let Some((idx, area)) = self.areas.iter_mut().enumerate().find(|(_, area)| area.vpn_range.get_start() == start_vpn) {
+            debug!("Removing area {}: {:?}..{:?}", idx, area.vpn_range.get_start(), area.vpn_range.get_end());
             area.unmap(&mut self.page_table);
             self.areas.remove(idx);
+
+            return;
         }
+
+        panic!("Cannot find area starting with {:?}. Cannot remove!", start_vpn);
+    }
+
+    pub fn recycle_data_pages(&mut self) {
+        self.areas.clear();
     }
 }
 

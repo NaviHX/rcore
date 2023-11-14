@@ -1,5 +1,5 @@
 use crate::{mem::address::*, debug};
-use alloc::vec::Vec;
+use alloc::{vec::Vec, string::String};
 use bitfield::size_of;
 use bitflags::bitflags;
 
@@ -122,6 +122,7 @@ impl PageTable {
     pub fn unmap(&mut self, vpn: VirtPageNum) {
         let pte = self.find_pte(vpn).unwrap();
         assert!(pte.is_valid(), "vpn {:?} is invalid before unmapping!", vpn);
+        debug!("Unmap vpn {:?}", vpn);
         *pte = PageTableEntry::empty();
     }
 }
@@ -136,6 +137,11 @@ impl PageTable {
 
     pub fn translate(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
         self.find_pte(vpn).map(|pte| *pte)
+    }
+
+    pub fn translate_va(&self, va: VirtAddr) -> Option<PhysAddr> {
+        let vpn: VirtPageNum = va.floor();
+        self.translate(vpn).map(|pte| PhysAddr::from(PhysAddr::from(pte.ppn()).0 + va.page_offset()))
     }
 }
 
@@ -178,26 +184,34 @@ pub fn translate<T: Sized>(
     token: usize,
     ptr: *const T,
 ) -> Vec<&'static mut [u8]> {
-    let page_table = PageTable::from_token(token);
-    let mut start = ptr as usize;
     let len = size_of::<T>();
-    let end = start + len;
-    let mut v = vec![];
+    translate_byte_buffer(token, ptr as *const u8, len)
+}
 
-    while start < end {
-        let start_va = VirtAddr::from(start);
-        let mut vpn = start_va.floor();
-        let ppn = page_table.translate(vpn).unwrap().ppn();
-        vpn.step();
-        let mut end_va = VirtAddr::from(end).min(vpn.into());
-        if end_va.page_offset() == 0 {
-            v.push(&mut ppn.get_byte_array()[start_va.page_offset()..]);
+/// T's memory may crosses different pages. Please only use this function with primitive types.
+pub unsafe fn translate_raw<T: Sized>(
+    token: usize,
+    ptr: *const T,
+) -> &'static mut T {
+    let page_table = PageTable::from_token(token);
+    let va = ptr as usize;
+    page_table.translate_va(va.into()).unwrap().get_mut()
+}
+
+pub fn translate_str(token: usize, ptr: *const u8) -> String {
+    let page_table = PageTable::from_token(token);
+    let mut string = String::new();
+    let mut va = ptr as usize;
+
+    loop {
+        let ch: u8 = *(page_table.translate_va(va.into()).unwrap().get_mut());
+        if ch == 0 {
+            break;
         } else {
-            v.push(&mut ppn.get_byte_array()[start_va.page_offset()..end_va.page_offset()])
+            string.push(ch as char);
+            va += 1;
         }
-
-        start = end_va.into();
     }
 
-    v
+    string
 }
