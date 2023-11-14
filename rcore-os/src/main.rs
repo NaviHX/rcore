@@ -40,7 +40,9 @@ pub fn rust_main() -> ! {
     // batch::print_app_info();
     // batch::run_next_app();
     log!("{} apps loaded.", loader::get_num_app());
-    task::run_first_task();
+    loader::list_apps();
+    task::add_init_proc();
+    task::processor::run_tasks();
     sbi::shutdown();
 }
 
