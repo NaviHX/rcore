@@ -11,7 +11,7 @@ use crate::{
     config::{TRAMPOLINE, TRAP_CONTEXT},
     error,
     syscall::syscall,
-    task::{exit_and_run_next, get_current_token, get_current_trap_context, suspend_and_run_next},
+    task::{processor::{current_trap_context, current_user_token}, exit_and_run_next, suspend_and_run_next},
     timer::set_next_trigger, debug,
 };
 
@@ -34,30 +34,34 @@ pub fn trap_handler() -> ! {
     let sstatus = sstatus::read();
     let scause = scause::read().cause();
     let stval = stval::read();
-    debug!("Sepc: 0x{:x}", sepc);
-    debug!("Sstatus: {:?}", sstatus);
-    debug!("Scause: {:?}", scause);
-    debug!("Stval: 0x{:x}", stval);
+    // debug!("Sepc: 0x{:x}", sepc);
+    // debug!("Sstatus: {:?}", sstatus);
+    // debug!("Scause: {:?}", scause);
+    // debug!("Stval: 0x{:x}", stval);
 
     // Ignore traps from kernel
     set_kernel_trap_entry();
 
-    let cx = get_current_trap_context();
+    let cx = current_trap_context();
     let scause = scause::read();
     let stval = stval::read();
 
     match scause.cause() {
         Trap::Exception(Exception::UserEnvCall) => {
             cx.sepc += 4;
-            cx.x[10] = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
+            let result = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
+
+            // Syscall may change the memory mapping (e.g exec)
+            let cx = current_trap_context();
+            cx.x[10] = result as usize;
         }
         Trap::Exception(Exception::StoreFault | Exception::StorePageFault) => {
             error!("PageFault in appication, killed.");
-            exit_and_run_next();
+            exit_and_run_next(-2);
         }
         Trap::Exception(Exception::IllegalInstruction) => {
             error!("Illegal instruction in application, killed.");
-            exit_and_run_next();
+            exit_and_run_next(-3);
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
             set_next_trigger();
@@ -98,7 +102,7 @@ pub fn trap_from_kernel() -> ! {
 pub fn trap_return() -> ! {
     set_user_trap_entry();
     let trap_context_ptr = TRAP_CONTEXT;
-    let user_satp = get_current_token();
+    let user_satp = current_user_token();
 
     extern "C" {
         fn __alltraps();
