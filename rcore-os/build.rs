@@ -70,6 +70,7 @@ app_names:
         .section .data
         .global app_{i}_start
         .global app_{i}_end
+        .align 3
 app_{i}_start:
         .incbin "{BIN_DIR}/{app}.bin"
 app_{i}_end:
