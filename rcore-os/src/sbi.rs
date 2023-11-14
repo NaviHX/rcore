@@ -39,6 +39,10 @@ pub fn console_put_char(c: usize) {
     sbi_call(Sbi::ConsolePutChar as usize, 0, c, 0, 0);
 }
 
+pub fn console_get_char() -> usize {
+    sbi_call(Sbi::ConsoleGetChar as usize, 0, 0, 0, 0)
+}
+
 pub fn shutdown() -> ! {
     sbi_call(Sbi::SRSTExtension as usize, ExtensionFid::Shutdown as usize, 0, 0, 0);
     panic!("WTF!!? It should shutdown!");
