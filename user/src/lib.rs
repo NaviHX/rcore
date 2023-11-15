@@ -8,6 +8,7 @@ mod lang_items;
 pub mod process;
 mod syscall;
 pub mod time;
+pub mod fs;
 
 use buddy_system_allocator::LockedHeap;
 const USER_HEAP_SIZE: usize = 16384;

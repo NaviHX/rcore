@@ -17,6 +17,8 @@ pub fn syscall(id: usize, args: [usize; 3]) -> isize {
 
 #[repr(usize)]
 pub enum Syscalls {
+    Open = 56,
+    Close = 57,
     Read = 63,
     Write = 64,
     Exit = 93,
@@ -62,4 +64,12 @@ pub fn sys_waitpid(pid: isize, exit_code: *mut i32) -> isize {
 
 pub fn sys_exec(path: &str) -> isize {
     syscall(Syscalls::Exec as usize, [path.as_ptr() as usize, 0, 0])
+}
+
+pub fn sys_open(path: &str, flags: u32) -> isize {
+    syscall(Syscalls::Open as usize, [path.as_ptr() as usize, flags as usize, 0])
+}
+
+pub fn sys_close(fd: usize) -> isize {
+    syscall(Syscalls::Close as usize, [fd, 0, 0])
 }
