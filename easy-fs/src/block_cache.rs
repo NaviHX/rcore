@@ -59,7 +59,7 @@ impl BlockCache {
         f(self.get_ref(offset))
     }
 
-    pub fn read_mut_and<T, V>(&self, offset: usize, f: impl FnOnce(&mut T) -> V) -> V {
+    pub fn read_mut_and<T, V>(&mut self, offset: usize, f: impl FnOnce(&mut T) -> V) -> V {
         f(self.get_mut(offset))
     }
 }
