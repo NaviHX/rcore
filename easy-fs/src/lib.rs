@@ -2,5 +2,6 @@
 extern crate alloc;
 
 pub mod block_dev;
+pub mod block_cache;
 
 pub const BLOCK_SIZE: usize = 512;
