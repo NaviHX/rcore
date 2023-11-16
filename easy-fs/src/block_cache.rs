@@ -1,6 +1,8 @@
 use alloc::sync::Arc;
+use lazy_static::lazy_static;
+use spin::Mutex;
 
-use crate::{BLOCK_SIZE, block_dev::BlockDevice};
+use crate::{block_dev::BlockDevice, BLOCK_SIZE};
 
 pub struct BlockCache {
     cache: [u8; BLOCK_SIZE],
@@ -42,7 +44,7 @@ impl BlockCache {
 
     pub fn sync(&mut self) {
         if self.modified {
-            self.modified =false;
+            self.modified = false;
             self.block_device.write_block(self.block_id, &self.cache);
         }
     }
@@ -62,4 +64,70 @@ impl BlockCache {
     pub fn read_mut_and<T, V>(&mut self, offset: usize, f: impl FnOnce(&mut T) -> V) -> V {
         f(self.get_mut(offset))
     }
+}
+
+const BLOCK_CACHE_SIZE: usize = 16;
+
+use alloc::collections::VecDeque;
+
+pub struct BlockCacheManager {
+    queue: VecDeque<(usize, Arc<Mutex<BlockCache>>)>,
+}
+
+impl BlockCacheManager {
+    pub fn new() -> Self {
+        Self {
+            queue: VecDeque::new(),
+        }
+    }
+
+    pub fn get_block_cache(
+        &mut self,
+        block_id: usize,
+        block_device: Arc<dyn BlockDevice>,
+    ) -> Arc<Mutex<BlockCache>> {
+        if let Some(pair) = self.queue.iter().find(|pair| pair.0 == block_id) {
+            Arc::clone(&pair.1)
+        } else {
+            if self.queue.len() == BLOCK_CACHE_SIZE {
+                if let Some((idx, _)) = self
+                    .queue
+                    .iter()
+                    .enumerate()
+                    .find(|(_, pair)| Arc::strong_count(&pair.1) == 1)
+                {
+                    self.queue.drain(idx..=idx);
+                } else {
+                    panic!("Run out of block cache!");
+                }
+            }
+
+            let block_cache = Arc::new(Mutex::new(BlockCache::new(
+                block_id,
+                Arc::clone(&block_device),
+            )));
+            self.queue.push_back((block_id, Arc::clone(&block_cache)));
+            block_cache
+        }
+    }
+}
+
+impl Default for BlockCacheManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+lazy_static! {
+    pub static ref BLOCK_CACHE_MANAGER: Mutex<BlockCacheManager> =
+        Mutex::new(BlockCacheManager::new());
+}
+
+pub fn get_block_cache(
+    block_id: usize,
+    block_device: Arc<dyn BlockDevice>,
+) -> Arc<Mutex<BlockCache>> {
+    BLOCK_CACHE_MANAGER
+        .lock()
+        .get_block_cache(block_id, block_device)
 }
