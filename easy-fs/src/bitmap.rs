@@ -14,6 +14,10 @@ impl DiskBitmap {
             blocks,
         }
     }
+
+    pub fn maxium(&self) -> usize {
+        self.blocks * BLOCK_BITS
+    }
 }
 
 type BitmapBlock = [u64; 64];
