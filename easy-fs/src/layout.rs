@@ -185,7 +185,70 @@ impl DiskInode {
         new_blocks: Vec<u32>,
         block_device: &Arc<dyn BlockDevice>,
     ) {
-        todo!()
+        let mut current_blocks = self.data_blocks();
+        self.size = new_size;
+        let total_blocks = self.data_blocks();
+        let mut new_blocks = new_blocks.into_iter();
+
+        // fill direct
+        while current_blocks < total_blocks.min(INODE_DIRECT_COUNT as u32) {
+            self.direct[current_blocks as usize] = new_blocks.next().unwrap();
+            current_blocks += 1;
+        }
+
+        // alloc indirect1
+        if total_blocks > INODE_DIRECT_COUNT as u32 {
+            if current_blocks == INODE_DIRECT_COUNT as u32 {
+                self.indirect1 = new_blocks.next().unwrap();
+            }
+            current_blocks -= INODE_DIRECT_COUNT as u32;
+            total_blocks -= INODE_DIRECT_COUNT as u32;
+        } else {
+            return;
+        }
+
+        // fill indirect1
+        get_block_cache(self.indirect1 as usize, block_device.clone()).lock().read_mut_and(0, |indirect1: &mut IndirectBlock| {
+            while current_blocks < total_blocks.min(INODE_INDIRECT1_COUNT as u32) {
+                indirect1[current_blocks as usize] = new_blocks.next().unwrap();
+                current_blocks += 1;
+            }
+        });
+
+        // alloc indirect2
+        if total_blocks > INODE_INDIRECT1_COUNT as u32 {
+            if current_blocks == INODE_INDIRECT1_COUNT as u32 {
+                self.indirect2 = new_blocks.next().unwrap();
+            }
+
+            current_blocks -= INODE_INDIRECT1_COUNT as u32;
+            total_blocks -= INODE_INDIRECT1_COUNT as u32;
+        } else {
+            return;
+        }
+
+        // fill indirect2 from (a0, b0) to (a1, b1)
+        let mut a0 = current_blocks as usize / INODE_INDIRECT1_COUNT;
+        let mut b0 = current_blocks as usize % INODE_INDIRECT1_COUNT;
+        let a1 = total_blocks as usize / INODE_INDIRECT1_COUNT;
+        let b1 = total_blocks as usize % INODE_INDIRECT1_COUNT;
+        get_block_cache(self.indirect2, block_device.clone()).lock().read_mut_and(0, |indirect2: &mut IndirectBlock| {
+            while (a0 < a1) || (a0 == a1 && b0 < b1) {
+                if b0 == 0 {
+                    indirect2[a0] = new_blocks.next().unwrap();
+                }
+
+                get_block_cache(indirect2[a0], block_device.clone()).lock().read_mut_and(0, |indirect1: &mut IndirectBlock| {
+                    indirect1[b0] = new_blocks.next().unwrap();
+                });
+
+                b0 += 1;
+                if b0 == INODE_INDIRECT1_COUNT {
+                    b0 = 0;
+                    a0 += 1;
+                }
+            }
+        });
     }
 
     pub fn clear_size(&mut self, block_device: &Arc<dyn BlockDevice>) -> Vec<u32> {
