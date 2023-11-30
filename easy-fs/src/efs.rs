@@ -6,7 +6,7 @@ use crate::{
     block_cache::get_block_cache,
     block_dev::BlockDevice,
     layout::{DataBlock, DiskInode, DiskInodeType, SuperBlock, INODE_SIZE},
-    BLOCK_SIZE,
+    BLOCK_SIZE, vfs::Inode,
 };
 
 pub struct EasyFileSystem {
@@ -99,6 +99,12 @@ impl EasyFileSystem {
 
                 Arc::new(Mutex::new(efs))
             })
+    }
+
+    pub fn root_inode(efs: &Arc<Mutex<Self>>) -> Inode {
+        let block_device = efs.lock().block_device.clone();
+        let (block_id, block_offset) = efs.lock().get_disk_inode_pos(0);
+        Inode::new(block_id, block_offset, efs.clone(), block_device)
     }
 
     pub fn alloc_inode(&mut self) -> u32 {
